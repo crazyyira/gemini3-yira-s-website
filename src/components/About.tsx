@@ -1,10 +1,12 @@
+"use client";
+
 import { motion } from "motion/react";
 
 export default function About() {
   const tags = ["北京", "攀岩者", "潜水员", "Vibe Coder", "活动主理人"];
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-24">
+    <section id="about" className="max-w-6xl mx-auto px-6 py-24">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}

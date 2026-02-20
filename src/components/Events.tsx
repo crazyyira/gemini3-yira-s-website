@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Calendar, MapPin, Send, X } from "lucide-react";
@@ -22,7 +24,7 @@ export default function Events() {
   }, []);
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-24">
+    <section id="events" className="max-w-6xl mx-auto px-6 py-24">
       <div className="flex items-end justify-between mb-12">
         <div>
           <h2 className="text-4xl font-display italic mb-2">营地集会</h2>

@@ -1,9 +1,11 @@
+"use client";
+
 import { motion } from "motion/react";
 import { Mountain, Waves, Lamp, Code } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-20 lg:pt-40">
+    <section id="hero" className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-20 lg:pt-40">
       {/* Top: Main Title */}
       <div className="relative z-30 text-center mb-16 lg:mb-32">
         <motion.div

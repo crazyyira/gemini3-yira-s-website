@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 
@@ -18,7 +20,7 @@ export default function Feed() {
   }, []);
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-24">
+    <section id="fragments" className="max-w-6xl mx-auto px-6 py-24">
       <div className="flex items-end justify-between mb-12">
         <div>
           <h2 className="text-4xl font-display italic mb-2">岛屿碎片</h2>

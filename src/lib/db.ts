@@ -1,9 +1,15 @@
-import express from "express";
-import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import path from "path";
 
-const db = new Database("island.db");
+const dbPath = path.join(process.cwd(), "island.db");
+
+declare global {
+  var db: Database.Database | undefined;
+}
+
+const db = global.db || new Database(dbPath);
+
+if (process.env.NODE_ENV !== "production") global.db = db;
 
 // Initialize database
 db.exec(`
@@ -62,52 +68,4 @@ if (eventCount.count === 0) {
   );
 }
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
-
-  app.use(express.json());
-
-  // API Routes
-  app.get("/api/posts", (req, res) => {
-    const posts = db.prepare("SELECT * FROM posts ORDER BY created_at DESC").all();
-    res.json(posts);
-  });
-
-  app.get("/api/events", (req, res) => {
-    const events = db.prepare("SELECT * FROM events").all();
-    res.json(events);
-  });
-
-  app.post("/api/stories", (req, res) => {
-    const { name, message } = req.body;
-    if (!name || !message) return res.status(400).json({ error: "Missing fields" });
-    db.prepare("INSERT INTO guestbook (name, message) VALUES (?, ?)").run(name, message);
-    res.json({ success: true });
-  });
-
-  app.get("/api/stories", (req, res) => {
-    const stories = db.prepare("SELECT * FROM guestbook ORDER BY created_at DESC").all();
-    res.json(stories);
-  });
-
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    app.use(express.static(path.join(process.cwd(), "dist")));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(process.cwd(), "dist", "index.html"));
-    });
-  }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
-
-startServer();
+export default db;
