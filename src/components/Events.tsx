@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Calendar, MapPin, Send, X } from "lucide-react";

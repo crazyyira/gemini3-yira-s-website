@@ -7,12 +7,21 @@ declare global {
   var db: Database.Database | undefined;
 }
 
-const db = global.db || new Database(dbPath);
-
-if (process.env.NODE_ENV !== "production") global.db = db;
+const db = (() => {
+  try {
+    const instance = global.db || new Database(dbPath);
+    if (process.env.NODE_ENV !== "production") global.db = instance;
+    return instance;
+  } catch (error) {
+    console.error("Failed to initialize database:", error);
+    // Return a mock or throw a clearer error
+    throw error;
+  }
+})();
 
 // Initialize database
-db.exec(`
+try {
+  db.exec(`
   CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     content TEXT,
@@ -36,6 +45,9 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
+} catch (error) {
+  console.error("Database initialization execution failed:", error);
+}
 
 // Seed data if empty
 const postCount = db.prepare("SELECT COUNT(*) as count FROM posts").get() as { count: number };

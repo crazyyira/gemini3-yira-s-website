@@ -10,6 +10,9 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-[#0a0510] text-white overflow-x-hidden;
   }
