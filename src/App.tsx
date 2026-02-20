@@ -4,6 +4,7 @@ import About from "./components/About";
 import Feed from "./components/Feed";
 import Events from "./components/Events";
 import Guestbook from "./components/Guestbook";
+import MouseTrail from "./components/MouseTrail";
 import { motion, useScroll, useSpring } from "motion/react";
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
 
       {/* Floating Interaction */}
       <Guestbook />
+      <MouseTrail />
     </main>
   );
 }
