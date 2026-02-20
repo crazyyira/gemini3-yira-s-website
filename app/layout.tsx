@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "@/src/index.css";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "小黑的奇幻岛屿 | The Magical Island of Xiaohei",

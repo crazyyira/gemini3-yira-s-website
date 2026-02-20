@@ -1,12 +1,12 @@
 "use client";
 
-import Fog from "@/src/components/Fog";
-import Hero from "@/src/components/Hero";
-import About from "@/src/components/About";
-import Feed from "@/src/components/Feed";
-import Events from "@/src/components/Events";
-import Guestbook from "@/src/components/Guestbook";
-import MouseTrail from "@/src/components/MouseTrail";
+import Fog from "@/components/Fog";
+import Hero from "@/components/Hero";
+import About from "@/components/About";
+import Feed from "@/components/Feed";
+import Events from "@/components/Events";
+import Guestbook from "@/components/Guestbook";
+import MouseTrail from "@/components/MouseTrail";
 import { motion, useScroll, useSpring } from "motion/react";
 
 export default function Home() {

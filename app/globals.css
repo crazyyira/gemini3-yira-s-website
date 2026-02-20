@@ -1,0 +1,41 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0a0510] text-white overflow-x-hidden;
+  }
+  img {
+    filter: sepia(0.2) contrast(1.1);
+    @apply transition-all duration-700;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl;
+  }
+
+  .glass-hover {
+    @apply hover:bg-white/10 transition-all duration-300;
+  }
+}
+
+@keyframes fog {
+  0% {
+    transform: translate(-10%, -10%) scale(1);
+  }
+  50% {
+    transform: translate(10%, 10%) scale(1.1);
+  }
+  100% {
+    transform: translate(-10%, -10%) scale(1);
+  }
+}
+
+.animate-fog {
+  animation: fog 20s ease-in-out infinite;
+}
