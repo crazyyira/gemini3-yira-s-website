@@ -1118,6 +1118,10 @@ img {
 .text-amber-400\/80{
   color: rgb(251 191 36 / 0.8);
 }
+.text-amber-500{
+  --tw-text-opacity: 1;
+  color: rgb(245 158 11 / var(--tw-text-opacity, 1));
+}
 .text-black{
   --tw-text-opacity: 1;
   color: rgb(0 0 0 / var(--tw-text-opacity, 1));

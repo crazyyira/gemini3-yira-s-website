@@ -14,11 +14,20 @@ export default function Guestbook() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // 保存到数据库
       const res = await fetch("/api/stories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, message }),
       });
+      
+      // 发送邮件通知
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "story", name, message }),
+      });
+      
       if (res.ok) {
         setName("");
         setMessage("");

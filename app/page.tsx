@@ -6,10 +6,14 @@ import About from "@/components/About";
 import Feed from "@/components/Feed";
 import Events from "@/components/Events";
 import Guestbook from "@/components/Guestbook";
+import ContactForm from "@/components/ContactForm";
 import MouseTrail from "@/components/MouseTrail";
 import { motion, useScroll, useSpring } from "motion/react";
+import { useState } from "react";
 
 export default function Home() {
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -53,13 +57,19 @@ export default function Home() {
           <div className="flex justify-center gap-6 text-white/40">
             <a href="#" className="hover:text-white transition-colors">WeChat</a>
             <a href="#" className="hover:text-white transition-colors">GitHub</a>
-            <a href="#" className="hover:text-white transition-colors">E-mail</a>
+            <button 
+              onClick={() => setIsContactOpen(true)}
+              className="hover:text-white transition-colors"
+            >
+              E-mail
+            </button>
           </div>
         </div>
       </footer>
 
       {/* Floating Interaction */}
       <Guestbook />
+      <ContactForm isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
       <MouseTrail />
     </main>
   );
