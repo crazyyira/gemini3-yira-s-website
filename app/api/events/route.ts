@@ -1,7 +1,21 @@
 import { NextResponse } from "next/server";
-import db from "@/src/lib/db";
+import { supabase } from "@/src/lib/supabase";
 
 export async function GET() {
-  const events = db.prepare("SELECT * FROM events").all();
-  return NextResponse.json(events);
+  try {
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return NextResponse.json({ error: "获取失败" }, { status: 500 });
+    }
+
+    return NextResponse.json(data || []);
+  } catch (error) {
+    console.error("Get events error:", error);
+    return NextResponse.json({ error: "服务器错误" }, { status: 500 });
+  }
 }
