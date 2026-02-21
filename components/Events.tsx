@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Calendar, MapPin, Send, X } from "lucide-react";
+import BookingSystem from "./BookingSystem";
 
 interface Event {
   id: number;
@@ -67,6 +68,17 @@ export default function Events() {
             </button>
           </motion.div>
         ))}
+      </div>
+
+      {/* 预约系统 */}
+      <div className="mt-16 text-center">
+        <div className="glass p-8 inline-block">
+          <h3 className="text-2xl font-display mb-3">想要一对一聊聊？</h3>
+          <p className="text-white/60 mb-6 max-w-md">
+            无论是线下见面、远程交流，还是分享心事，都可以预约小黑的时间
+          </p>
+          <BookingSystem />
+        </div>
       </div>
 
       <AnimatePresence>

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Mail, X } from "lucide-react";
+import Notification from "./Notification";
 
 interface ContactFormProps {
   isOpen: boolean;
@@ -14,6 +15,17 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
   const [contact, setContact] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{
+    isOpen: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,18 +36,37 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "contact", name, contact, message }),
       });
+      
       if (res.ok) {
         setName("");
         setContact("");
         setMessage("");
         onClose();
-        alert("消息已发送，我会尽快回复你！");
+        setNotification({
+          isOpen: true,
+          type: "success",
+          title: "发送成功！",
+          message: "你的消息已经送达，小黑会尽快回复你的。",
+        });
       } else {
-        alert("发送失败，请稍后重试。");
+        const errorData = await res.json();
+        setNotification({
+          isOpen: true,
+          type: "error",
+          title: "发送失败",
+          message: errorData.error === "服务器配置错误" 
+            ? "邮件服务暂时不可用，请稍后再试或通过其他方式联系。"
+            : "消息发送遇到了问题，可能是网络不稳定，请稍后重试。",
+        });
       }
     } catch (err) {
       console.error(err);
-      alert("发送失败，请稍后重试。");
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "发送失败",
+        message: "网络连接出现问题，请检查网络后重试。",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -120,7 +151,16 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
           </motion.div>
         </div>
       )}
+      
+      <Notification
+        isOpen={notification.isOpen}
+        onClose={() => setNotification({ ...notification, isOpen: false })}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+      />
     </AnimatePresence>
   );
 }
+
 

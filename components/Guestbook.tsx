@@ -3,12 +3,24 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { MessageSquare, Sparkles, X } from "lucide-react";
+import Notification from "./Notification";
 
 export default function Guestbook() {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{
+    isOpen: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,21 +33,50 @@ export default function Guestbook() {
         body: JSON.stringify({ name, message }),
       });
       
+      if (!res.ok) {
+        setNotification({
+          isOpen: true,
+          type: "error",
+          title: "投递失败",
+          message: "故事投递遇到了问题，可能是服务器繁忙，请稍后重试。",
+        });
+        return;
+      }
+      
       // 发送邮件通知
-      await fetch("/api/send-email", {
+      const emailRes = await fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "story", name, message }),
       });
       
-      if (res.ok) {
-        setName("");
-        setMessage("");
-        setIsOpen(false);
-        alert("故事已收入瓶中，感谢分享。");
+      setName("");
+      setMessage("");
+      setIsOpen(false);
+      
+      if (emailRes.ok) {
+        setNotification({
+          isOpen: true,
+          type: "success",
+          title: "投递成功！",
+          message: "你的故事已经收入瓶中，感谢你的分享。",
+        });
+      } else {
+        setNotification({
+          isOpen: true,
+          type: "success",
+          title: "投递成功！",
+          message: "你的故事已经收入瓶中，但邮件通知发送失败。",
+        });
       }
     } catch (err) {
       console.error(err);
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "投递失败",
+        message: "网络连接出现问题，请检查网络后重试。",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -117,6 +158,14 @@ export default function Guestbook() {
           </div>
         )}
       </AnimatePresence>
+      
+      <Notification
+        isOpen={notification.isOpen}
+        onClose={() => setNotification({ ...notification, isOpen: false })}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+      />
     </>
   );
 }
