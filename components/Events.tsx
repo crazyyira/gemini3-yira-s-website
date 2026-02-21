@@ -106,14 +106,31 @@ export default function Events() {
               <h3 className="text-2xl font-display mb-2">{selectedEvent.title}</h3>
               <p className="text-white/40 mb-6 italic">报名表单已就绪，请填写你的信息</p>
 
-              <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('报名成功！'); setSelectedEvent(null); }}>
+              <form className="space-y-4" onSubmit={(e) => { 
+                e.preventDefault(); 
+                const formData = new FormData(e.currentTarget);
+                const name = formData.get('name') as string;
+                const contact = formData.get('contact') as string;
+                
+                fetch(`/api/events/${selectedEvent.id}/registrations`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name, contact }),
+                })
+                  .then(res => res.json())
+                  .then(() => {
+                    alert('报名成功！');
+                    setSelectedEvent(null);
+                  })
+                  .catch(() => alert('报名失败，请稍后重试'));
+              }}>
                 <div>
                   <label className="block text-xs uppercase tracking-widest text-white/40 mb-2">你的称呼</label>
-                  <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-200/50" placeholder="怎么称呼你？" required />
+                  <input name="name" type="text" className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-200/50" placeholder="怎么称呼你？" required />
                 </div>
                 <div>
                   <label className="block text-xs uppercase tracking-widest text-white/40 mb-2">联系方式</label>
-                  <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-200/50" placeholder="微信或邮箱" required />
+                  <input name="contact" type="text" className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-200/50" placeholder="微信或邮箱" required />
                 </div>
                 <button type="submit" className="w-full py-4 rounded-xl bg-amber-500 text-black font-bold hover:bg-amber-400 transition-colors mt-4">
                   确认提交

@@ -10,7 +10,8 @@ import {
   BookOpen, 
   MessageSquare, 
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Users
 } from "lucide-react";
 
 const menuItems = [
@@ -34,6 +35,13 @@ const menuItems = [
     icon: Calendar,
     href: "/admin/events",
     color: "from-orange-500 to-red-500",
+  },
+  {
+    title: "活动报名",
+    description: "管理活动报名信息",
+    icon: Users,
+    href: "/admin/event-registrations",
+    color: "from-teal-500 to-cyan-500",
   },
   {
     title: "预约管理",
