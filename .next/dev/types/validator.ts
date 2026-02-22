@@ -245,6 +245,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../../app/api/island-identity/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/island-identity">> = Specific
+  const handler = {} as typeof import("../../../app/api/island-identity/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../app/api/photos/delete/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/photos/delete">> = Specific

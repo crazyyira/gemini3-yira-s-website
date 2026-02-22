@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { Mountain, Waves, Lamp, Code } from "lucide-react";
+import IslandIdentityGenerator from "./IslandIdentityGenerator";
 
 interface HeroContent {
   main_title: string;
@@ -24,6 +25,7 @@ export default function Hero() {
     right_card_description: "一盏复古台灯，一行跳动的代码，在寂静的深夜构建属于未来的碎片。",
     bottom_text: "连接有趣的人，一起 Vibe Coding，一起坠入山海。",
   });
+  const [showIdentityGenerator, setShowIdentityGenerator] = useState(false);
 
   useEffect(() => {
     fetch("/api/hero")
@@ -45,9 +47,33 @@ export default function Hero() {
           transition={{ delay: 0.3, duration: 0.8 }}
           className="w-full"
         >
-          <h1 className="text-4xl md:text-6xl lg:text-8xl font-display font-bold mb-6 bg-gradient-to-r from-purple-300 via-white to-amber-200 bg-clip-text text-transparent drop-shadow-2xl">
-            {content.main_title}
-          </h1>
+          <div className="relative inline-block">
+            <h1 
+              onClick={() => setShowIdentityGenerator(true)}
+              className="text-4xl md:text-6xl lg:text-8xl font-display font-bold mb-6 bg-gradient-to-r from-purple-300 via-white to-amber-200 bg-clip-text text-transparent drop-shadow-2xl cursor-pointer hover:scale-105 transition-transform duration-300"
+            >
+              {content.main_title}
+            </h1>
+            
+            {/* 闪烁提示 */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ 
+                opacity: [0.5, 1, 0.5],
+                scale: [0.95, 1, 0.95],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute -top-8 -right-4 md:-right-12 bg-gradient-to-r from-purple-500 to-amber-500 text-white text-xs md:text-sm px-3 py-1.5 rounded-full shadow-lg cursor-pointer"
+              onClick={() => setShowIdentityGenerator(true)}
+            >
+              ✨ 点这里查看你的岛屿身份
+            </motion.div>
+          </div>
+          
           <div className="h-px w-32 bg-gradient-to-r from-transparent via-white/50 to-transparent mx-auto mb-8" />
           <p className="text-sm md:text-lg lg:text-xl tracking-[0.3em] uppercase font-light text-white/80 max-w-2xl mx-auto px-4">
             {content.main_subtitle}
@@ -101,6 +127,13 @@ export default function Hero() {
           {content.bottom_text}
         </p>
       </motion.div>
+
+      {/* 岛屿身份生成器 */}
+      <AnimatePresence>
+        {showIdentityGenerator && (
+          <IslandIdentityGenerator onClose={() => setShowIdentityGenerator(false)} />
+        )}
+      </AnimatePresence>
     </section>
   );
 }
