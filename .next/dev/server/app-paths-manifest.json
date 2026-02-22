@@ -1,4 +1,5 @@
 {
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
   "/api/events/route": "app/api/events/route.js",
   "/api/hero/route": "app/api/hero/route.js",
   "/api/island-identity/route": "app/api/island-identity/route.js",
