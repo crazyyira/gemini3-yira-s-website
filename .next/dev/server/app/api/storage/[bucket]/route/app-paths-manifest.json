@@ -1,0 +1,3 @@
+{
+  "/api/storage/[bucket]/route": "app/api/storage/[bucket]/route.js"
+}

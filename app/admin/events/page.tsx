@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Users } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Users, Upload, Image as ImageIcon } from "lucide-react";
 import Notification from "@/components/Notification";
 
 interface Event {
@@ -13,6 +13,13 @@ interface Event {
   time: string;
   location: string;
   join_link: string;
+  image_url?: string;
+  created_at: string;
+}
+
+interface StorageImage {
+  name: string;
+  url: string;
   created_at: string;
 }
 
@@ -28,7 +35,11 @@ export default function EventsAdmin() {
     time: "",
     location: "",
     join_link: "",
+    image_url: "",
   });
+  const [storageImages, setStorageImages] = useState<StorageImage[]>([]);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [notification, setNotification] = useState<{
     isOpen: boolean;
     type: "success" | "error";
@@ -70,6 +81,96 @@ export default function EventsAdmin() {
     }
   };
 
+  const fetchStorageImages = async () => {
+    try {
+      const res = await fetch("/api/storage/EVENTS");
+      const data = await res.json();
+      setStorageImages(data || []);
+    } catch (error) {
+      console.error("Failed to load storage images:", error);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "上传失败",
+        message: "请选择图片文件",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const formDataUpload = new FormData();
+    formDataUpload.append("file", file);
+
+    try {
+      const res = await fetch("/api/storage/EVENTS/upload", {
+        method: "POST",
+        body: formDataUpload,
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        setNotification({
+          isOpen: true,
+          type: "success",
+          title: "上传成功！",
+          message: "图片已添加到图库",
+        });
+        fetchStorageImages();
+        setFormData({ ...formData, image_url: result.data.publicUrl });
+      } else {
+        throw new Error("上传失败");
+      }
+    } catch (error) {
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "上传失败",
+        message: "上传图片时出现问题，请稍后重试",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleImageDelete = async (fileName: string) => {
+    if (!confirm("确定要删除这张图片吗？")) return;
+
+    try {
+      const res = await fetch("/api/storage/EVENTS/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName }),
+      });
+
+      if (res.ok) {
+        setNotification({
+          isOpen: true,
+          type: "success",
+          title: "删除成功",
+          message: "图片已删除",
+        });
+        fetchStorageImages();
+      } else {
+        throw new Error("删除失败");
+      }
+    } catch (error) {
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "删除失败",
+        message: "删除图片时出现问题，请稍后重试",
+      });
+    }
+  };
+
   const handleCreate = () => {
     setIsCreating(true);
     setFormData({
@@ -78,7 +179,9 @@ export default function EventsAdmin() {
       time: "",
       location: "",
       join_link: "",
+      image_url: "",
     });
+    fetchStorageImages();
   };
 
   const handleEdit = (event: Event) => {
@@ -89,7 +192,9 @@ export default function EventsAdmin() {
       time: event.time,
       location: event.location,
       join_link: event.join_link || "",
+      image_url: event.image_url || "",
     });
+    fetchStorageImages();
   };
 
   const handleSave = async () => {
@@ -159,6 +264,7 @@ export default function EventsAdmin() {
       time: "",
       location: "",
       join_link: "",
+      image_url: "",
     });
   };
 
@@ -210,6 +316,108 @@ export default function EventsAdmin() {
               </button>
             </div>
             <div className="space-y-4">
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-white/40 mb-2">
+                  活动封面图片
+                </label>
+                
+                {/* 图片预览 */}
+                {formData.image_url && (
+                  <div className="mb-4 relative">
+                    <img
+                      src={formData.image_url}
+                      alt="预览"
+                      className="w-full max-w-md h-48 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => setFormData({ ...formData, image_url: "" })}
+                      className="absolute top-2 right-2 p-2 bg-red-500 rounded-full hover:bg-red-400"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* 操作按钮 */}
+                <div className="flex gap-2 mb-4">
+                  <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 transition-colors">
+                    <Upload className="w-4 h-4" />
+                    {isUploading ? "上传中..." : "上传新图片"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={isUploading}
+                      className="hidden"
+                    />
+                  </label>
+                  <button
+                    onClick={() => setShowImagePicker(!showImagePicker)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-400 transition-colors"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    从图库选择
+                  </button>
+                </div>
+
+                {/* 图库选择器 */}
+                {showImagePicker && (
+                  <div className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-sm font-bold">图库 (EVENTS bucket)</h4>
+                      <button
+                        onClick={() => setShowImagePicker(false)}
+                        className="text-white/40 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                      {storageImages.map((img) => (
+                        <div
+                          key={img.name}
+                          className="relative group cursor-pointer aspect-square"
+                          onClick={() => {
+                            setFormData({ ...formData, image_url: img.url });
+                            setShowImagePicker(false);
+                          }}
+                        >
+                          <img
+                            src={img.url}
+                            alt={img.name}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleImageDelete(img.name);
+                              }}
+                              className="p-2 rounded-lg bg-red-500 hover:bg-red-400"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {storageImages.length === 0 && (
+                        <div className="col-span-3 text-center py-8 text-white/40">
+                          图库为空，请上传图片
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 手动输入 URL */}
+                <input
+                  type="text"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-200/50"
+                  placeholder="或手动输入图片 URL"
+                />
+              </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-white/40 mb-2">
                   活动标题 *
@@ -290,36 +498,49 @@ export default function EventsAdmin() {
               key={event.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass p-6"
+              className="glass overflow-hidden"
             >
-              <h3 className="text-xl font-display mb-3">{event.title}</h3>
-              <p className="text-white/60 mb-4 line-clamp-3">{event.description}</p>
-              <div className="space-y-2 mb-4 text-sm text-white/40">
-                <div>📅 {event.time}</div>
-                <div>📍 {event.location}</div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => handleEdit(event)}
-                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                  编辑
-                </button>
-                <button
-                  onClick={() => router.push(`/admin/events/${event.id}/registrations`)}
-                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 transition-colors"
-                >
-                  <Users className="w-4 h-4" />
-                  报名
-                </button>
-                <button
-                  onClick={() => handleDelete(event.id)}
-                  className="col-span-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  删除
-                </button>
+              {/* 活动封面图 */}
+              {event.image_url && (
+                <div className="aspect-[16/9] overflow-hidden">
+                  <img
+                    src={event.image_url}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              
+              <div className="p-6">
+                <h3 className="text-xl font-display mb-3">{event.title}</h3>
+                <p className="text-white/60 mb-4 line-clamp-3">{event.description}</p>
+                <div className="space-y-2 mb-4 text-sm text-white/40">
+                  <div>📅 {event.time}</div>
+                  <div>📍 {event.location}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleEdit(event)}
+                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    编辑
+                  </button>
+                  <button
+                    onClick={() => router.push(`/admin/events/${event.id}/registrations`)}
+                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 transition-colors"
+                  >
+                    <Users className="w-4 h-4" />
+                    报名
+                  </button>
+                  <button
+                    onClick={() => handleDelete(event.id)}
+                    className="col-span-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    删除
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))}

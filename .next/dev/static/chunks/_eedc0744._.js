@@ -169,6 +169,8 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/trash-2.js [app-client] (ecmascript) <export default as Trash2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$save$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Save$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/save.js [app-client] (ecmascript) <export default as Save>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/x.js [app-client] (ecmascript) <export default as X>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$upload$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Upload$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/upload.js [app-client] (ecmascript) <export default as Upload>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$image$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Image$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/image.js [app-client] (ecmascript) <export default as Image>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$Notification$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/Notification.tsx [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
@@ -189,6 +191,9 @@ function PostsAdmin() {
         content: "",
         image_url: ""
     });
+    const [storageImages, setStorageImages] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [showImagePicker, setShowImagePicker] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [isUploading, setIsUploading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [notification, setNotification] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
         isOpen: false,
         type: "success",
@@ -223,12 +228,102 @@ function PostsAdmin() {
             setIsLoading(false);
         }
     };
+    const fetchStorageImages = async ()=>{
+        try {
+            const res = await fetch("/api/storage/POSTS");
+            const data = await res.json();
+            setStorageImages(data || []);
+        } catch (error) {
+            console.error("Failed to load storage images:", error);
+        }
+    };
+    const handleImageUpload = async (e)=>{
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+            setNotification({
+                isOpen: true,
+                type: "error",
+                title: "上传失败",
+                message: "请选择图片文件"
+            });
+            return;
+        }
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+        try {
+            const res = await fetch("/api/storage/POSTS/upload", {
+                method: "POST",
+                body: formData
+            });
+            if (res.ok) {
+                const result = await res.json();
+                setNotification({
+                    isOpen: true,
+                    type: "success",
+                    title: "上传成功！",
+                    message: "图片已添加到图库"
+                });
+                fetchStorageImages();
+                // 自动设置为当前图片
+                setFormData({
+                    ...formData,
+                    image_url: result.data.publicUrl
+                });
+            } else {
+                throw new Error("上传失败");
+            }
+        } catch (error) {
+            setNotification({
+                isOpen: true,
+                type: "error",
+                title: "上传失败",
+                message: "上传图片时出现问题，请稍后重试"
+            });
+        } finally{
+            setIsUploading(false);
+        }
+    };
+    const handleImageDelete = async (fileName)=>{
+        if (!confirm("确定要删除这张图片吗？")) return;
+        try {
+            const res = await fetch("/api/storage/POSTS/delete", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    fileName
+                })
+            });
+            if (res.ok) {
+                setNotification({
+                    isOpen: true,
+                    type: "success",
+                    title: "删除成功",
+                    message: "图片已删除"
+                });
+                fetchStorageImages();
+            } else {
+                throw new Error("删除失败");
+            }
+        } catch (error) {
+            setNotification({
+                isOpen: true,
+                type: "error",
+                title: "删除失败",
+                message: "删除图片时出现问题，请稍后重试"
+            });
+        }
+    };
     const handleCreate = ()=>{
         setIsCreating(true);
         setFormData({
             content: "",
             image_url: ""
         });
+        fetchStorageImages();
     };
     const handleEdit = (post)=>{
         setEditingPost(post);
@@ -236,6 +331,7 @@ function PostsAdmin() {
             content: post.content,
             image_url: post.image_url
         });
+        fetchStorageImages();
     };
     const handleSave = async ()=>{
         try {
@@ -310,12 +406,12 @@ function PostsAdmin() {
                 children: "加载中..."
             }, void 0, false, {
                 fileName: "[project]/app/admin/posts/page.tsx",
-                lineNumber: 141,
+                lineNumber: 243,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/app/admin/posts/page.tsx",
-            lineNumber: 140,
+            lineNumber: 242,
             columnNumber: 7
         }, this);
     }
@@ -338,14 +434,14 @@ function PostsAdmin() {
                                                 className: "w-4 h-4"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                lineNumber: 155,
+                                                lineNumber: 257,
                                                 columnNumber: 15
                                             }, this),
                                             "返回后台"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 151,
+                                        lineNumber: 253,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -353,7 +449,7 @@ function PostsAdmin() {
                                         children: "岛屿碎片管理"
                                     }, void 0, false, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 158,
+                                        lineNumber: 260,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -361,13 +457,13 @@ function PostsAdmin() {
                                         children: "管理图文内容"
                                     }, void 0, false, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 159,
+                                        lineNumber: 261,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                lineNumber: 150,
+                                lineNumber: 252,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -378,20 +474,20 @@ function PostsAdmin() {
                                         className: "w-5 h-5"
                                     }, void 0, false, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 165,
+                                        lineNumber: 267,
                                         columnNumber: 13
                                     }, this),
                                     "新建碎片"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                lineNumber: 161,
+                                lineNumber: 263,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/admin/posts/page.tsx",
-                        lineNumber: 149,
+                        lineNumber: 251,
                         columnNumber: 9
                     }, this),
                     (editingPost || isCreating) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["motion"].div, {
@@ -413,7 +509,7 @@ function PostsAdmin() {
                                         children: editingPost ? "编辑碎片" : "新建碎片"
                                     }, void 0, false, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 178,
+                                        lineNumber: 280,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -423,18 +519,18 @@ function PostsAdmin() {
                                             className: "w-5 h-5"
                                         }, void 0, false, {
                                             fileName: "[project]/app/admin/posts/page.tsx",
-                                            lineNumber: 182,
+                                            lineNumber: 284,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 181,
+                                        lineNumber: 283,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                lineNumber: 177,
+                                lineNumber: 279,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -444,11 +540,210 @@ function PostsAdmin() {
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
                                                 className: "block text-xs uppercase tracking-widest text-white/40 mb-2",
-                                                children: "图片 URL"
+                                                children: "图片"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                lineNumber: 187,
+                                                lineNumber: 289,
                                                 columnNumber: 17
+                                            }, this),
+                                            formData.image_url && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "mb-4 relative",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                        src: formData.image_url,
+                                                        alt: "预览",
+                                                        className: "w-full max-w-md h-48 object-cover rounded-lg"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/admin/posts/page.tsx",
+                                                        lineNumber: 296,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        onClick: ()=>setFormData({
+                                                                ...formData,
+                                                                image_url: ""
+                                                            }),
+                                                        className: "absolute top-2 right-2 p-2 bg-red-500 rounded-full hover:bg-red-400",
+                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                            className: "w-4 h-4"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/admin/posts/page.tsx",
+                                                            lineNumber: 305,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/admin/posts/page.tsx",
+                                                        lineNumber: 301,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                lineNumber: 295,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex gap-2 mb-4",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                        className: "cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 transition-colors",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$upload$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Upload$3e$__["Upload"], {
+                                                                className: "w-4 h-4"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                                lineNumber: 313,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            isUploading ? "上传中..." : "上传新图片",
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                type: "file",
+                                                                accept: "image/*",
+                                                                onChange: handleImageUpload,
+                                                                disabled: isUploading,
+                                                                className: "hidden"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                                lineNumber: 315,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/admin/posts/page.tsx",
+                                                        lineNumber: 312,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        onClick: ()=>setShowImagePicker(!showImagePicker),
+                                                        className: "flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-400 transition-colors",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$image$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Image$3e$__["Image"], {
+                                                                className: "w-4 h-4"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                                lineNumber: 327,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            "从图库选择"
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/admin/posts/page.tsx",
+                                                        lineNumber: 323,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                lineNumber: 311,
+                                                columnNumber: 17
+                                            }, this),
+                                            showImagePicker && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "mb-4 p-4 bg-white/5 rounded-lg border border-white/10",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "flex justify-between items-center mb-3",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
+                                                                className: "text-sm font-bold",
+                                                                children: "图库 (POSTS bucket)"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                                lineNumber: 336,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                onClick: ()=>setShowImagePicker(false),
+                                                                className: "text-white/40 hover:text-white",
+                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                                    className: "w-4 h-4"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/app/admin/posts/page.tsx",
+                                                                    lineNumber: 341,
+                                                                    columnNumber: 25
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                                lineNumber: 337,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/admin/posts/page.tsx",
+                                                        lineNumber: 335,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "grid grid-cols-3 gap-2 max-h-64 overflow-y-auto",
+                                                        children: [
+                                                            storageImages.map((img)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "relative group cursor-pointer aspect-square",
+                                                                    onClick: ()=>{
+                                                                        setFormData({
+                                                                            ...formData,
+                                                                            image_url: img.url
+                                                                        });
+                                                                        setShowImagePicker(false);
+                                                                    },
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                                            src: img.url,
+                                                                            alt: img.name,
+                                                                            className: "w-full h-full object-cover rounded-lg"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/admin/posts/page.tsx",
+                                                                            lineNumber: 354,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                            className: "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center",
+                                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                onClick: (e)=>{
+                                                                                    e.stopPropagation();
+                                                                                    handleImageDelete(img.name);
+                                                                                },
+                                                                                className: "p-2 rounded-lg bg-red-500 hover:bg-red-400",
+                                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
+                                                                                    className: "w-4 h-4"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/app/admin/posts/page.tsx",
+                                                                                    lineNumber: 367,
+                                                                                    columnNumber: 31
+                                                                                }, this)
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                                                lineNumber: 360,
+                                                                                columnNumber: 29
+                                                                            }, this)
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/admin/posts/page.tsx",
+                                                                            lineNumber: 359,
+                                                                            columnNumber: 27
+                                                                        }, this)
+                                                                    ]
+                                                                }, img.name, true, {
+                                                                    fileName: "[project]/app/admin/posts/page.tsx",
+                                                                    lineNumber: 346,
+                                                                    columnNumber: 25
+                                                                }, this)),
+                                                            storageImages.length === 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "col-span-3 text-center py-8 text-white/40",
+                                                                children: "图库为空，请上传图片"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                                lineNumber: 373,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/admin/posts/page.tsx",
+                                                        lineNumber: 344,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/admin/posts/page.tsx",
+                                                lineNumber: 334,
+                                                columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                                 type: "text",
@@ -458,25 +753,16 @@ function PostsAdmin() {
                                                         image_url: e.target.value
                                                     }),
                                                 className: "w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-200/50",
-                                                placeholder: "https://example.com/image.jpg"
+                                                placeholder: "或手动输入图片 URL"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                lineNumber: 190,
+                                                lineNumber: 382,
                                                 columnNumber: 17
-                                            }, this),
-                                            formData.image_url && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                src: formData.image_url,
-                                                alt: "预览",
-                                                className: "mt-4 w-full max-w-md h-48 object-cover rounded-lg"
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/admin/posts/page.tsx",
-                                                lineNumber: 198,
-                                                columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 186,
+                                        lineNumber: 288,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -486,7 +772,7 @@ function PostsAdmin() {
                                                 children: "内容"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                lineNumber: 206,
+                                                lineNumber: 391,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
@@ -499,13 +785,13 @@ function PostsAdmin() {
                                                 placeholder: "写下你的碎片..."
                                             }, void 0, false, {
                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                lineNumber: 209,
+                                                lineNumber: 394,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 205,
+                                        lineNumber: 390,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -516,26 +802,26 @@ function PostsAdmin() {
                                                 className: "w-5 h-5"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                lineNumber: 220,
+                                                lineNumber: 405,
                                                 columnNumber: 17
                                             }, this),
                                             "保存"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 216,
+                                        lineNumber: 401,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                lineNumber: 185,
+                                lineNumber: 287,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/admin/posts/page.tsx",
-                        lineNumber: 172,
+                        lineNumber: 274,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -559,12 +845,12 @@ function PostsAdmin() {
                                             className: "w-full h-full object-cover"
                                         }, void 0, false, {
                                             fileName: "[project]/app/admin/posts/page.tsx",
-                                            lineNumber: 237,
+                                            lineNumber: 422,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 236,
+                                        lineNumber: 421,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -575,7 +861,7 @@ function PostsAdmin() {
                                                 children: post.content
                                             }, void 0, false, {
                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                lineNumber: 244,
+                                                lineNumber: 429,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -589,14 +875,14 @@ function PostsAdmin() {
                                                                 className: "w-4 h-4"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                                lineNumber: 250,
+                                                                lineNumber: 435,
                                                                 columnNumber: 21
                                                             }, this),
                                                             "编辑"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                                        lineNumber: 246,
+                                                        lineNumber: 431,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -607,43 +893,43 @@ function PostsAdmin() {
                                                                 className: "w-4 h-4"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                                lineNumber: 257,
+                                                                lineNumber: 442,
                                                                 columnNumber: 21
                                                             }, this),
                                                             "删除"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                                        lineNumber: 253,
+                                                        lineNumber: 438,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                                lineNumber: 245,
+                                                lineNumber: 430,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/admin/posts/page.tsx",
-                                        lineNumber: 243,
+                                        lineNumber: 428,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, post.id, true, {
                                 fileName: "[project]/app/admin/posts/page.tsx",
-                                lineNumber: 230,
+                                lineNumber: 415,
                                 columnNumber: 13
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/app/admin/posts/page.tsx",
-                        lineNumber: 228,
+                        lineNumber: 413,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/admin/posts/page.tsx",
-                lineNumber: 148,
+                lineNumber: 250,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$Notification$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -657,17 +943,17 @@ function PostsAdmin() {
                 message: notification.message
             }, void 0, false, {
                 fileName: "[project]/app/admin/posts/page.tsx",
-                lineNumber: 267,
+                lineNumber: 452,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/admin/posts/page.tsx",
-        lineNumber: 147,
+        lineNumber: 249,
         columnNumber: 5
     }, this);
 }
-_s(PostsAdmin, "UO8h1iEUuLPzpDLxGYoIBZLY7TY=", false, function() {
+_s(PostsAdmin, "sJDli/mTN8GN2UFpxOd8SrEmFck=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"]
     ];

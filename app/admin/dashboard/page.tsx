@@ -11,10 +11,18 @@ import {
   MessageSquare, 
   LogOut,
   ChevronRight,
-  Users
+  Users,
+  Home
 } from "lucide-react";
 
 const menuItems = [
+  {
+    title: "首页内容",
+    description: "编辑首页文字内容",
+    icon: Home,
+    href: "/admin/hero",
+    color: "from-indigo-500 to-purple-500",
+  },
   {
     title: "个人资料",
     description: "编辑灵魂拼切信息",
@@ -99,7 +107,7 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="flex justify-between items-center mb-12">
           <div>
-            <h1 className="text-4xl font-display italic mb-2">管理后台</h1>
+            <h1 className="text-4xl font-display italic mb-2">小黑的灯塔</h1>
             <p className="text-white/40">欢迎回来，小黑</p>
           </div>
           <button

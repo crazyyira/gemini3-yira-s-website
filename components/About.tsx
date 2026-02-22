@@ -12,6 +12,12 @@ interface Profile {
   bio_quote: string;
 }
 
+interface Photo {
+  name: string;
+  url: string;
+  created_at: string;
+}
+
 export default function About() {
   const [profile, setProfile] = useState<Profile>({
     name: "小黑",
@@ -22,6 +28,9 @@ export default function About() {
     bio_quote: "We are all fragments of a larger dream.",
   });
 
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
   useEffect(() => {
     fetch("/api/profile")
       .then((res) => res.json())
@@ -31,7 +40,30 @@ export default function About() {
         }
       })
       .catch((err) => console.error("Failed to load profile:", err));
+
+    // 加载 Supabase Storage 中的照片
+    fetch("/api/photos")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setPhotos(data);
+        }
+      })
+      .catch((err) => console.error("Failed to load photos:", err));
   }, []);
+
+  // 自动轮播照片（可选）
+  useEffect(() => {
+    if (photos.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
+    }, 5000); // 每5秒切换一张
+
+    return () => clearInterval(interval);
+  }, [photos.length]);
+
+  const displayImage = photos.length > 0 ? photos[currentPhotoIndex].url : profile.avatar_url;
 
   return (
     <section id="about" className="max-w-6xl mx-auto px-6 py-24">
@@ -45,11 +77,29 @@ export default function About() {
           <div className="absolute inset-0 bg-gradient-to-tr from-primary to-secondary rounded-3xl rotate-3 opacity-20" />
           <div className="absolute inset-0 bg-white/5 backdrop-blur-sm rounded-3xl -rotate-3 border border-white/10" />
           <img
-            src={profile.avatar_url}
+            key={currentPhotoIndex}
+            src={displayImage}
             alt={profile.name}
             className="absolute inset-4 object-cover rounded-2xl hover:scale-[1.02] transition-all duration-700"
             referrerPolicy="no-referrer"
           />
+          
+          {/* 照片指示器 */}
+          {photos.length > 1 && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+              {photos.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentPhotoIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === currentPhotoIndex
+                      ? "bg-amber-500 w-8"
+                      : "bg-white/30 hover:bg-white/50"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </motion.div>
 
         <div>

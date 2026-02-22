@@ -45,7 +45,7 @@ export default function AdminLogin() {
         className="glass p-8 max-w-md w-full"
       >
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-display italic mb-2">管理后台</h1>
+          <h1 className="text-3xl font-display italic mb-2">小黑的灯塔</h1>
           <p className="text-white/40">请登录以继续</p>
         </div>
 

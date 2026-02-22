@@ -45,16 +45,130 @@ module.exports = mod;
 "use strict";
 
 __turbopack_context__.s([
+    "deleteImageFromBucket",
+    ()=>deleteImageFromBucket,
+    "deletePhoto",
+    ()=>deletePhoto,
+    "getImagesFromBucket",
+    ()=>getImagesFromBucket,
+    "getPhotos",
+    ()=>getPhotos,
     "supabase",
-    ()=>supabase
+    ()=>supabase,
+    "uploadImageToBucket",
+    ()=>uploadImageToBucket,
+    "uploadPhoto",
+    ()=>uploadPhoto
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$supabase$2f$supabase$2d$js$2f$dist$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/node_modules/@supabase/supabase-js/dist/index.mjs [app-route] (ecmascript) <locals>");
 ;
-const supabaseUrl = ("TURBOPACK compile-time value", "https://iuvcrtieyttlznsvtzhg.supabase.co") || '';
-const supabaseAnonKey = ("TURBOPACK compile-time value", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1dmNydGlleXR0bHpuc3Z0emhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MzI1MTksImV4cCI6MjA4NzIwODUxOX0.6tifQI0cQ-jR_JWwp7IYaiNmlZDHhmBcglcIsrt9a7Y") || '';
-if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
-;
+// 服务器端使用
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Missing Supabase environment variables');
+}
 const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$supabase$2f$supabase$2d$js$2f$dist$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$locals$3e$__["createClient"])(supabaseUrl, supabaseAnonKey);
+async function getPhotos() {
+    const { data, error } = await supabase.storage.from('PHOTO').list('', {
+        limit: 100,
+        offset: 0,
+        sortBy: {
+            column: 'created_at',
+            order: 'desc'
+        }
+    });
+    if (error) {
+        console.error('Error fetching photos:', error);
+        return [];
+    }
+    // 过滤出图片文件并生成公开 URL
+    const photos = data.filter((file)=>{
+        const ext = file.name.toLowerCase();
+        return ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.png') || ext.endsWith('.gif') || ext.endsWith('.webp');
+    }).map((file)=>{
+        const { data: urlData } = supabase.storage.from('PHOTO').getPublicUrl(file.name);
+        return {
+            name: file.name,
+            url: urlData.publicUrl,
+            created_at: file.created_at
+        };
+    });
+    return photos;
+}
+async function uploadPhoto(file) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const { data, error } = await supabase.storage.from('PHOTO').upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+    });
+    if (error) {
+        throw error;
+    }
+    return data;
+}
+async function deletePhoto(fileName) {
+    const { error } = await supabase.storage.from('PHOTO').remove([
+        fileName
+    ]);
+    if (error) {
+        throw error;
+    }
+    return true;
+}
+async function getImagesFromBucket(bucketName) {
+    const { data, error } = await supabase.storage.from(bucketName).list('', {
+        limit: 100,
+        offset: 0,
+        sortBy: {
+            column: 'created_at',
+            order: 'desc'
+        }
+    });
+    if (error) {
+        console.error(`Error fetching images from ${bucketName}:`, error);
+        return [];
+    }
+    const images = data.filter((file)=>{
+        const ext = file.name.toLowerCase();
+        return ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.png') || ext.endsWith('.gif') || ext.endsWith('.webp');
+    }).map((file)=>{
+        const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(file.name);
+        return {
+            name: file.name,
+            url: urlData.publicUrl,
+            created_at: file.created_at
+        };
+    });
+    return images;
+}
+async function uploadImageToBucket(bucketName, file) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const { data, error } = await supabase.storage.from(bucketName).upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+    });
+    if (error) {
+        throw error;
+    }
+    // 返回公开 URL
+    const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(fileName);
+    return {
+        ...data,
+        publicUrl: urlData.publicUrl
+    };
+}
+async function deleteImageFromBucket(bucketName, fileName) {
+    const { error } = await supabase.storage.from(bucketName).remove([
+        fileName
+    ]);
+    if (error) {
+        throw error;
+    }
+    return true;
+}
 }),
 "[project]/app/api/bookings/all/route.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
 "use strict";

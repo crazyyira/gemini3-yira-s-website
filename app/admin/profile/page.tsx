@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Save, Upload, X, Plus, ArrowLeft } from "lucide-react";
+import { Save, Upload, X, Plus, ArrowLeft, Trash2 } from "lucide-react";
 import Notification from "@/components/Notification";
 
 interface Profile {
@@ -13,6 +13,12 @@ interface Profile {
   bio_paragraph_1: string;
   bio_paragraph_2: string;
   bio_quote: string;
+}
+
+interface Photo {
+  name: string;
+  url: string;
+  created_at: string;
 }
 
 export default function ProfileAdmin() {
@@ -28,6 +34,8 @@ export default function ProfileAdmin() {
   const [newTag, setNewTag] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [notification, setNotification] = useState<{
     isOpen: boolean;
     type: "success" | "error";
@@ -70,6 +78,24 @@ export default function ProfileAdmin() {
       setIsLoading(false);
     }
   };
+
+  const fetchPhotos = async () => {
+    try {
+      const res = await fetch("/api/photos");
+      const data = await res.json();
+      if (data && Array.isArray(data)) {
+        setPhotos(data);
+      }
+    } catch (error) {
+      console.error("Failed to load photos:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!isLoading) {
+      fetchPhotos();
+    }
+  }, [isLoading]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -120,6 +146,85 @@ export default function ProfileAdmin() {
       ...profile,
       tags: profile.tags.filter((tag) => tag !== tagToRemove),
     });
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 验证文件类型
+    if (!file.type.startsWith("image/")) {
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "上传失败",
+        message: "请选择图片文件",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/photos/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        setNotification({
+          isOpen: true,
+          type: "success",
+          title: "上传成功！",
+          message: "照片已添加到相册",
+        });
+        fetchPhotos();
+      } else {
+        throw new Error("上传失败");
+      }
+    } catch (error) {
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "上传失败",
+        message: "上传照片时出现问题，请稍后重试",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePhotoDelete = async (fileName: string) => {
+    if (!confirm("确定要删除这张照片吗？")) return;
+
+    try {
+      const res = await fetch(`/api/photos/delete`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName }),
+      });
+
+      if (res.ok) {
+        setNotification({
+          isOpen: true,
+          type: "success",
+          title: "删除成功",
+          message: "照片已删除",
+        });
+        fetchPhotos();
+      } else {
+        throw new Error("删除失败");
+      }
+    } catch (error) {
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "删除失败",
+        message: "删除照片时出现问题，请稍后重试",
+      });
+    }
   };
 
   if (isLoading) {
@@ -261,6 +366,60 @@ export default function ProfileAdmin() {
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-200/50"
               placeholder="一句有意义的话..."
             />
+          </div>
+
+          {/* 照片管理 */}
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-white/40 mb-2">
+              个人照片相册（Supabase Storage）
+            </label>
+            <p className="text-white/40 text-sm mb-4">
+              上传到 PHOTO bucket 的照片会在"关于"页面自动轮播展示
+            </p>
+            
+            {/* 上传按钮 */}
+            <div className="mb-4">
+              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-3 rounded-lg bg-blue-500 text-white hover:bg-blue-400 transition-colors">
+                <Upload className="w-4 h-4" />
+                {isUploading ? "上传中..." : "上传照片"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  disabled={isUploading}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* 照片网格 */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {photos.map((photo) => (
+                <div key={photo.name} className="relative group aspect-square">
+                  <img
+                    src={photo.url}
+                    alt={photo.name}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                    <button
+                      onClick={() => handlePhotoDelete(photo.name)}
+                      className="p-2 rounded-lg bg-red-500 hover:bg-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-2 left-2 right-2 text-xs text-white/60 bg-black/50 px-2 py-1 rounded truncate">
+                    {photo.name}
+                  </div>
+                </div>
+              ))}
+              {photos.length === 0 && (
+                <div className="col-span-full text-center py-8 text-white/40">
+                  暂无照片，点击上传按钮添加照片
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 保存按钮 */}

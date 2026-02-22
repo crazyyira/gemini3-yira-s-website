@@ -3,13 +3,19 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Upload, Image as ImageIcon } from "lucide-react";
 import Notification from "@/components/Notification";
 
 interface Post {
   id: number;
   content: string;
   image_url: string;
+  created_at: string;
+}
+
+interface StorageImage {
+  name: string;
+  url: string;
   created_at: string;
 }
 
@@ -20,6 +26,9 @@ export default function PostsAdmin() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({ content: "", image_url: "" });
+  const [storageImages, setStorageImages] = useState<StorageImage[]>([]);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [notification, setNotification] = useState<{
     isOpen: boolean;
     type: "success" | "error";
@@ -61,14 +70,107 @@ export default function PostsAdmin() {
     }
   };
 
+  const fetchStorageImages = async () => {
+    try {
+      const res = await fetch("/api/storage/POSTS");
+      const data = await res.json();
+      setStorageImages(data || []);
+    } catch (error) {
+      console.error("Failed to load storage images:", error);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "上传失败",
+        message: "请选择图片文件",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/storage/POSTS/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        setNotification({
+          isOpen: true,
+          type: "success",
+          title: "上传成功！",
+          message: "图片已添加到图库",
+        });
+        fetchStorageImages();
+        // 自动设置为当前图片
+        setFormData({ ...formData, image_url: result.data.publicUrl });
+      } else {
+        throw new Error("上传失败");
+      }
+    } catch (error) {
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "上传失败",
+        message: "上传图片时出现问题，请稍后重试",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleImageDelete = async (fileName: string) => {
+    if (!confirm("确定要删除这张图片吗？")) return;
+
+    try {
+      const res = await fetch("/api/storage/POSTS/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName }),
+      });
+
+      if (res.ok) {
+        setNotification({
+          isOpen: true,
+          type: "success",
+          title: "删除成功",
+          message: "图片已删除",
+        });
+        fetchStorageImages();
+      } else {
+        throw new Error("删除失败");
+      }
+    } catch (error) {
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "删除失败",
+        message: "删除图片时出现问题，请稍后重试",
+      });
+    }
+  };
+
   const handleCreate = () => {
     setIsCreating(true);
     setFormData({ content: "", image_url: "" });
+    fetchStorageImages();
   };
 
   const handleEdit = (post: Post) => {
     setEditingPost(post);
     setFormData({ content: post.content, image_url: post.image_url });
+    fetchStorageImages();
   };
 
   const handleSave = async () => {
@@ -185,22 +287,105 @@ export default function PostsAdmin() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs uppercase tracking-widest text-white/40 mb-2">
-                  图片 URL
+                  图片
                 </label>
+                
+                {/* 图片预览 */}
+                {formData.image_url && (
+                  <div className="mb-4 relative">
+                    <img
+                      src={formData.image_url}
+                      alt="预览"
+                      className="w-full max-w-md h-48 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => setFormData({ ...formData, image_url: "" })}
+                      className="absolute top-2 right-2 p-2 bg-red-500 rounded-full hover:bg-red-400"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* 操作按钮 */}
+                <div className="flex gap-2 mb-4">
+                  <label className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-400 transition-colors">
+                    <Upload className="w-4 h-4" />
+                    {isUploading ? "上传中..." : "上传新图片"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={isUploading}
+                      className="hidden"
+                    />
+                  </label>
+                  <button
+                    onClick={() => setShowImagePicker(!showImagePicker)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-400 transition-colors"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    从图库选择
+                  </button>
+                </div>
+
+                {/* 图库选择器 */}
+                {showImagePicker && (
+                  <div className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-sm font-bold">图库 (POSTS bucket)</h4>
+                      <button
+                        onClick={() => setShowImagePicker(false)}
+                        className="text-white/40 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                      {storageImages.map((img) => (
+                        <div
+                          key={img.name}
+                          className="relative group cursor-pointer aspect-square"
+                          onClick={() => {
+                            setFormData({ ...formData, image_url: img.url });
+                            setShowImagePicker(false);
+                          }}
+                        >
+                          <img
+                            src={img.url}
+                            alt={img.name}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleImageDelete(img.name);
+                              }}
+                              className="p-2 rounded-lg bg-red-500 hover:bg-red-400"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {storageImages.length === 0 && (
+                        <div className="col-span-3 text-center py-8 text-white/40">
+                          图库为空，请上传图片
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 手动输入 URL */}
                 <input
                   type="text"
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-200/50"
-                  placeholder="https://example.com/image.jpg"
+                  placeholder="或手动输入图片 URL"
                 />
-                {formData.image_url && (
-                  <img
-                    src={formData.image_url}
-                    alt="预览"
-                    className="mt-4 w-full max-w-md h-48 object-cover rounded-lg"
-                  />
-                )}
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-white/40 mb-2">

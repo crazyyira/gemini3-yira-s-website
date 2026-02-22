@@ -12,6 +12,7 @@ interface Event {
   time: string;
   location: string;
   join_link: string;
+  image_url?: string;
 }
 
 export default function Events() {
@@ -41,31 +42,44 @@ export default function Events() {
             initial={{ scale: 0.95, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             transition={{ delay: index * 0.2 }}
-            className="glass p-8 flex flex-col justify-between group"
+            className="glass overflow-hidden flex flex-col group"
           >
-            <div>
-              <h3 className="text-2xl font-display mb-4 group-hover:text-amber-200 transition-colors">
-                {event.title}
-              </h3>
-              <p className="text-white/60 mb-6 leading-relaxed">{event.description}</p>
-              <div className="space-y-3 mb-8">
-                <div className="flex items-center gap-3 text-sm text-white/40">
-                  <Calendar className="w-4 h-4" />
-                  <span>{event.time}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-white/40">
-                  <MapPin className="w-4 h-4" />
-                  <span>{event.location}</span>
+            {/* 活动封面图 */}
+            {event.image_url && (
+              <div className="aspect-[16/9] overflow-hidden">
+                <img
+                  src={event.image_url}
+                  alt={event.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+              </div>
+            )}
+            
+            <div className="p-8 flex flex-col justify-between flex-1">
+              <div>
+                <h3 className="text-2xl font-display mb-4 group-hover:text-amber-200 transition-colors">
+                  {event.title}
+                </h3>
+                <p className="text-white/60 mb-6 leading-relaxed">{event.description}</p>
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-center gap-3 text-sm text-white/40">
+                    <Calendar className="w-4 h-4" />
+                    <span>{event.time}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-white/40">
+                    <MapPin className="w-4 h-4" />
+                    <span>{event.location}</span>
+                  </div>
                 </div>
               </div>
+              <button
+                onClick={() => setSelectedEvent(event)}
+                className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-amber-200/50 transition-all flex items-center justify-center gap-2 group/btn"
+              >
+                <span>立即报名</span>
+                <Send className="w-4 h-4 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+              </button>
             </div>
-            <button
-              onClick={() => setSelectedEvent(event)}
-              className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-amber-200/50 transition-all flex items-center justify-center gap-2 group/btn"
-            >
-              <span>立即报名</span>
-              <Send className="w-4 h-4 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
-            </button>
           </motion.div>
         ))}
       </div>
