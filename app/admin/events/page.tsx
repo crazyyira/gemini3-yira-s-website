@@ -106,13 +106,13 @@ export default function EventsAdmin() {
     }
 
     setIsUploading(true);
-    const formDataUpload = new FormData();
-    formDataUpload.append("file", file);
+    const uploadFormData = new FormData();
+    uploadFormData.append("file", file);
 
     try {
       const res = await fetch("/api/storage/EVENTS/upload", {
         method: "POST",
-        body: formDataUpload,
+        body: uploadFormData,
       });
 
       if (res.ok) {
@@ -124,7 +124,7 @@ export default function EventsAdmin() {
           message: "图片已添加到图库",
         });
         fetchStorageImages();
-        setFormData({ ...formData, image_url: result.data.publicUrl });
+        setFormData((prev) => ({ ...prev, image_url: result.data.publicUrl }));
       } else {
         throw new Error("上传失败");
       }

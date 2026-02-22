@@ -95,13 +95,13 @@ export default function PostsAdmin() {
     }
 
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
+    const uploadFormData = new FormData();
+    uploadFormData.append("file", file);
 
     try {
       const res = await fetch("/api/storage/POSTS/upload", {
         method: "POST",
-        body: formData,
+        body: uploadFormData,
       });
 
       if (res.ok) {
@@ -114,7 +114,7 @@ export default function PostsAdmin() {
         });
         fetchStorageImages();
         // 自动设置为当前图片
-        setFormData({ ...formData, image_url: result.data.publicUrl });
+        setFormData((prev) => ({ ...prev, image_url: result.data.publicUrl }));
       } else {
         throw new Error("上传失败");
       }
