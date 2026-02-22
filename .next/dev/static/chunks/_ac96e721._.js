@@ -653,7 +653,7 @@ function About() {
         columnNumber: 5
     }, this);
 }
-_s(About, "myMweFjNxin0+58qTF+NWVsC9rA=");
+_s(About, "h1TB8bsBWR/z60W2vQyBehnIgn8=");
 _c = About;
 var _c;
 __turbopack_context__.k.register(_c, "About");

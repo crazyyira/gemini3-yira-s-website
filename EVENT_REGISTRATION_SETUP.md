@@ -70,3 +70,5 @@ CREATE POLICY "Allow public delete access" ON event_registrations
 - `attended` - 已参加
 - `absent` - 未参加
 
+
+
